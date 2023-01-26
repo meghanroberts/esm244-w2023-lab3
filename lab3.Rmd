@@ -1,0 +1,79 @@
+---
+title: "Labweek3:binomialregression"
+author: "Meghan Roberts"
+date: "2023-01-26"
+output: html_document
+---
+
+```{r setup, echo=TRUE, warning=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message = FALSE)
+
+library(tidyverse)
+library(tidymodels)
+library(palmerpenguins)
+library(GGally)
+library(jtools)
+library(AICcmodavg)
+```
+
+#Pseodocode
+
+* Examine data (plots, data, summary stats)
+* Identify a question 
+* Wrangle the data (if necessary)
+* Identify some candidate models
+* Select among candidate models using AIC/BIC
+* Select among candidate models using k-fold cross validation
+* Select among candidate models using area under Receiver Operating Characteristic Curve
+
+
+```{r}
+GGally::ggpairs(penguins %>% select(species, bill_length_mm:sex), 
+                aes(color=species)) 
+#drops some variables we are not as interested in
+#with the key coloring by species
+```
+
+```{r}
+#chinstrap and adelie are most similar
+class(penguins$species)
+levels(penguins$species)
+
+adelie_chinstrap <- penguins %>%
+  filter(species %in% c("Adelie", "Chinstrap")) %>% 
+  mutate(species=fct_drop(species)) %>% 
+  select(-year) %>% 
+  drop_na()
+  #drop any levels that no longer exist in it (aka Gentoo)
+# %in% looks for and A or a C, == means a match in order
+# essentially, use %in% instead of ==
+levels(adelie_chinstrap$species)
+```
+
+#Let's look at trend across variabes
+```{r}
+#body mass vs lipper length
+ggplot(data=adelie_chinstrap, aes(x=body_mass_g, y=flipper_length_mm))+
+  geom_point(aes(color=sex, shape=island))+
+  facet_wrap(~ species)
+# facet_wrap is separating the plots by species
+
+#body mass vs bill length
+ggplot(data = adelie_chinstrap, aes(x=body_mass_g, y=bill_length_mm))+
+  geom_point(aes(color=sex, shape=island))+
+  facet_wrap(~ species)
+```
+
+## Let's do some binary logistic regression
+
+```{r}
+f1 <- species ~ body_mass_g+flipper_length_mm+sex #formula 1
+ad_chin_blr1 <-glm(data=adelie_chinstrap, formula = f1, family = "binomial")
+ad_chin_blr1
+summary(ad_chin_blr1)
+
+blr1_tidy <- tidy(ad_chin_blr1) #makes a nice dataframe
+```
+
+
+
